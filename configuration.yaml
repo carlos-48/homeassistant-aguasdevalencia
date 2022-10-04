@@ -1,0 +1,25 @@
+multiscrape:
+
+  - resource_template: https://www.aguasdevalencia.es/VirtualOffice/Secure/action_getDatosLecturaHorariaEntreFechas?start={% set lastweek =  now() - timedelta( days = 7 ) %}{{ lastweek.strftime('%d') }}%2F{{ lastweek.strftime('%m') }}%2F{{ lastweek.strftime('%Y') }}&end={{ now().strftime('%d') }}%2F{{ now().strftime('%m') }}%2F{{ now().strftime('%Y') }}
+    name: lectura_contador_agua_fria
+    log_response: true
+    scan_interval: 300
+    headers:
+      Connection: keep-alive
+      Content-Type: application/json; charset=UTF-8
+      Cookie: cc_cookie_accept=cc_cookie_accept; x_SessionId=!secret aguas_de_valencia_session_id #hay que ir actualizando esto de la cookie de forma manual
+      X-Requested-With: XMLHttpRequest
+    authentication: basic
+    username: !secret aguas_de_valencia_login
+    password: !secret aguas_de_valencia_password
+
+    sensor:
+      - unique_id: lectura_contador_agua_fria
+        name: Lectura Contador Agua Fría
+        value_template: "{{ value_json['data']['datasets'][0]['data'][-1:][0].title | replace (',', '.') | float }}"
+        unit_of_measurement: 'm3'
+        force_update: true
+        state_class: total
+        icon: mdi:water
+        on_error:
+          value: last
