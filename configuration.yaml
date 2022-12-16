@@ -1,25 +1,28 @@
-multiscrape:
-
-  - resource_template: https://www.aguasdevalencia.es/VirtualOffice/Secure/action_getDatosLecturaHorariaEntreFechas?start={% set lastweek =  now() - timedelta( days = 7 ) %}{{ lastweek.strftime('%d') }}%2F{{ lastweek.strftime('%m') }}%2F{{ lastweek.strftime('%Y') }}&end={{ now().strftime('%d') }}%2F{{ now().strftime('%m') }}%2F{{ now().strftime('%Y') }}
-    name: lectura_contador_agua_fria
-    log_response: true
-    scan_interval: 300
-    headers:
-      Connection: keep-alive
-      Content-Type: application/json; charset=UTF-8
-      Cookie: cc_cookie_accept=cc_cookie_accept; x_SessionId=!secret aguas_de_valencia_session_id #hay que ir actualizando esto de la cookie de forma manual
-      X-Requested-With: XMLHttpRequest
-    authentication: basic
-    username: !secret aguas_de_valencia_login
-    password: !secret aguas_de_valencia_password
-
-    sensor:
-      - unique_id: lectura_contador_agua_fria
-        name: Lectura Contador Agua Fría
-        value_template: "{{ value_json['data']['datasets'][0]['data'][-1:][0].title | replace (',', '.') | float }}"
-        unit_of_measurement: 'm3'
-        force_update: true
+#This creates a Command Line Sensor that acts as follows:
+# - sets the payload for the login request (YOU HAVE TO CHANGE YOUR CREDENTIALS)
+# - sets the payload for requesting the last week consumption (AT THE MOMENT ONLY GETS THE LAST READING, WORK IN PROGRESS TO GET ALL THE READINGS)
+# - makes the log-in and saves the cookie with the X_session_id and other needed information
+# - makes the readings request using that cookie
+#Then saves the last reading to the sensor, in cubic meters, changing the decimal formating
+sensor:
+  - platform: command_line
+      name: cli_aguasdevalencia
+      command: |-
+        login_data='login=YOURACCOUNT@EMAIL.COM&pass=YOURPASSWORD&remember=true&suministro='; url='https://www.aguasdevalencia.es/VirtualOffice';\
+        request_dates='start={% set lastweek =  now() - timedelta( days = 7 ) %}{{ lastweek.strftime('%d') }}%2F{{ lastweek.strftime('%m') }}%2F{{ lastweek.strftime('%Y') }}&end={{ now().strftime('%d') }}%2F{{ now().strftime('%m') }}%2F{{ now().strftime('%Y') }}'
+        c=$(curl -X POST -H 'Content-Type: application/x-www-form-urlencoded' -d $login_data -ksc - $url/action_Login -o /dev/null);\
+        echo "${c}" | curl -ksb - $url/Secure/action_getDatosLecturaHorariaEntreFechas?$request_dates
+      scan_interval: 3600
+      unique_id: cli_aguasdevalencia
+      value_template: "{{ value_json['data']['datasets'][0]['data'][-1:][0].title | replace (',', '.') | float + value_json['data']['datasets'][0]['data'][-1:][0].y/1000}}"
+      unit_of_measurement: "m3"
+      
+#The above sensor cannot be used in the Energy Panel, because of the command_line integration does not support using state_class and device_class propierties
+#An easy patch to solve this is to create a template sensor using the value of the command_line sensor
+template:
+  - sensor:
+      - name: "Contador Aguas de Valencia"
+        state: "{{ states('sensor.cli_aguasdevalencia') }}"
+        unit_of_measurement: "m3"
         state_class: total
-        icon: mdi:water
-        on_error:
-          value: last
+        device_class: water
