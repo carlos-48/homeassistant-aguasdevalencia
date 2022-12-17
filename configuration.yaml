@@ -15,7 +15,7 @@ sensor:
       scan_interval: 3600
       unique_id: cli_aguasdevalencia
       value_template: "{{ value_json['data']['datasets'][0]['data'][-1:][0].title | replace (',', '.') | float + value_json['data']['datasets'][0]['data'][-1:][0].y/1000}}"
-      unit_of_measurement: "m3"
+      unit_of_measurement: "m³"
       
 #The above sensor cannot be used in the Energy Panel, because of the command_line integration does not support using state_class and device_class propierties
 #An easy patch to solve this is to create a template sensor using the value of the command_line sensor
@@ -23,6 +23,6 @@ template:
   - sensor:
       - name: "Contador Aguas de Valencia"
         state: "{{ states('sensor.cli_aguasdevalencia') }}"
-        unit_of_measurement: "m3"
+        unit_of_measurement: "m³"
         state_class: total
         device_class: water
