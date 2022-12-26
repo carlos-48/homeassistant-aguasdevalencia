@@ -2,6 +2,7 @@
 
 import json
 import requests
+from datetime import datetime, timedelta
 
 login_data = {
     "login": "YOURACCOUNT@EMAIL.COM",
@@ -16,16 +17,22 @@ session = requests.Session()
 response = session.post(f"{url}/action_Login", data=login_data)
 
 if response.ok:
+    # Obtener la fecha y hora actuales, asignarlos a la variable end_date y convertirlo a formato dd/mm/yyyy
+    now = datetime.now()
+    end_date = now.date()
+    end_date = end_date.strftime("%d/%m/%Y")
+    # Restar 7 días a la fecha actual, asignar la fecha de hace una semana a la variable start_date y convertirlo a formato dd/mm/yyyy
+    last_week = now - timedelta(days=7)
+    start_date = last_week.date()
+    start_date = start_date.strftime("%d/%m/%Y")
     # Obtener datos de lectura horaria entre fechas
-    start_date = "01/01/2021"  # Fecha de inicio, formato dd/mm/yyyy
-    end_date = "01/01/2022"  # Fecha final, formato dd/mm/yyyy
     request_dates = f"start={start_date}&end={end_date}"
     response = session.get(f"{url}/Secure/action_getDatosLecturaHorariaEntreFechas?{request_dates}")
 
     if response.ok:
-        data = response.json()
+        json_data = response.json()
         # Procesar datos aquí...
-        data = value_json["data"]["datasets"][0]["data"][-1:][0]
+        data = json_data["data"]["datasets"][0]["data"][-1:][0]
         title = data["title"] # Lectura anterior
         y = data["y"] # Consumo actual ultima hora registrada
         # Reemplazar la coma por un punto y convertir a float la lectura anterior
