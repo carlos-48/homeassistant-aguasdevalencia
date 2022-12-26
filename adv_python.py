@@ -1,8 +1,10 @@
 # Código generado con ayuda de ChatGPT
 
+from datetime import datetime, timedelta
+
 import json
 import requests
-from datetime import datetime, timedelta
+
 
 login_data = {
     "login": "YOURACCOUNT@EMAIL.COM",
@@ -11,23 +13,23 @@ login_data = {
     "suministro": "",
 }
 
-url = "https://www.aguasdevalencia.es/VirtualOffice"
+URL = "https://www.aguasdevalencia.es/VirtualOffice"
 
 session = requests.Session()
-response = session.post(f"{url}/action_Login", data=login_data)
+response = session.post(f"{URL}/action_Login", data=login_data)
 
 if response.ok:
-    # Obtener la fecha y hora actuales, asignarlos a la variable end_date y convertirlo a formato dd/mm/yyyy
+    # Obtener fecha y hora actuales, asignarlos a variable end_date y convertir a formato dd/mm/yyyy
     now = datetime.now()
     end_date = now.date()
     end_date = end_date.strftime("%d/%m/%Y")
-    # Restar 7 días a la fecha actual, asignar la fecha de hace una semana a la variable start_date y convertirlo a formato dd/mm/yyyy
+    # Restar 7 días a fecha actual, asignar a variable start_date y convertirlo a formato dd/mm/yyyy
     last_week = now - timedelta(days=7)
     start_date = last_week.date()
     start_date = start_date.strftime("%d/%m/%Y")
     # Obtener datos de lectura horaria entre fechas
     request_dates = f"start={start_date}&end={end_date}"
-    response = session.get(f"{url}/Secure/action_getDatosLecturaHorariaEntreFechas?{request_dates}")
+    response = session.get(f"{URL}/Secure/action_getDatosLecturaHorariaEntreFechas?{request_dates}")
 
     if response.ok:
         json_data = response.json()
